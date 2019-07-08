@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404, get_list_or_404
 from django.http import HttpResponseNotFound
 
 from products.models import Product, Category, ProductImage
@@ -6,10 +6,10 @@ from products.models import Product, Category, ProductImage
 
 def products(request):
     # Get all products from the DB using the Product model
-    products = '...'  # <YOUR CODE HERE>
+    products = Product.objects.filter(active=True)
 
     # Get up to 4 `featured=true` Products to be displayed on top
-    featured_products = '...'  # <YOUR CODE HERE>
+    featured_products = products.filter(featured=True)[:4]
 
     return render(
         request,
@@ -20,10 +20,10 @@ def products(request):
 
 def create_product(request):
     # Get all categories from the DB
-    categories = '...'  # <YOUR CODE HERE>
+    categories = Category.objects.all()
     if request.method == 'GET':
         # Render 'create_product.html' template sending categories as context
-        return render(request, 'static_form.html')  # static_form is just used as an example
+        return render(request, 'create_product.html', context={'categories': categories})
     elif request.method == 'POST':
         # Validate that all fields below are given in request.POST dictionary,
         # and that they don't have empty values.
@@ -34,7 +34,12 @@ def create_product(request):
         # errors = {'name': 'This field is required.'}
         fields = ['name', 'sku', 'price']
         errors = {}
-        # <YOUR CODE HERE>
+        for field in fields:
+            if not request.POST.get(field):
+                errors[field] = 'This field is required.'
+
+        if errors:
+            return render(request, 'create_product.html', context={'categories': categories, 'errors': errors})
 
         # If no errors so far, validate each field one by one and use the same
         # errors dictionary created above in case that any validation fails
@@ -45,24 +50,36 @@ def create_product(request):
             errors['name'] = "Name can't be longer than 100 characters."
 
         # SKU validation: it must contain 8 alphanumeric characters
-        # <YOUR CODE HERE>
+        sku = request.POST.get('sku')
+        if not len(sku) == 8 or not sku.isalnum():
+            errors['sku'] = "SKU must contain 8 alphanumeric characters."
 
         # Price validation: positive float lower than 10000.00
-        # <YOUR CODE HERE>
+        price = float(request.POST.get('price'))
+        if not price >= 0 and not price < 10000:
+            errors['price'] = "Price can't be negative or greater than or equal to $10,000."
 
         # if any errors so far, render 'create_product.html' sending errors and
         # categories as context
-        # <YOUR CODE HERE>
+        if errors:
+            return render(request, 'create_product.html', context={'categories': categories, 'errors': errors})
+
+        description = request.POST.get('description')
 
         # If execution reaches this point, there aren't any errors.
         # Get category from DB based on category name given in payload.
         # Create product with data given in payload and proper category
-        category = '...'  # <YOUR CODE HERE>
-        product = '...'  # <YOUR CODE HERE>
+        category = get_object_or_404(Category, name__iexact=request.POST.get('category'))
+        product = Product.objects.create(name=name, sku=sku, price=price, category=category, description=description)
+        product.save()
 
         # Up to three images URLs can come in payload with keys 'image-1', 'image-2', etc.
         # For each one, create a ProductImage object with proper URL and product
-        # <YOUR CODE HERE>
+        for image in ['image_1', 'image_2', 'image_3']:
+            url = request.POST.get(image)
+            if url:
+                product_image = ProductImage.objects.create(product=product, url=url)
+                product_image.save()
 
         # Redirect to 'products' view
         return redirect('products')
@@ -70,34 +87,46 @@ def create_product(request):
 
 def edit_product(request, product_id):
     # Get product with given product_id
-    product = '...'  # <YOUR CODE HERE>
+    product = get_object_or_404(Product, id=product_id)
 
     # Get all categories from the DB
-    categories = '...'  # <YOUR CODE HERE>
+    categories = get_list_or_404(Category)
     if request.method == 'GET':
         # Render 'edit_product.html' template sending product, categories and
         # a 'images' list containing all product images URLs.
 
         # images = ['http://image/1', 'http://image/2', ...]
-        return render(request, 'static_form.html')  # static_form is just used as an example
+        return render(request, 'edit_product.html', context={
+            'product': product,
+            'categories': categories,
+            'images': list(product.productimage_set.all())
+        })  # static_form is just used as an example
     elif request.method == 'POST':
         # Validate following fields that come in request.POST in the very same
         # way that you've done it in create_product view
         fields = ['name', 'sku', 'price']
         errors = {}
-        # <YOUR CODE HERE>
+        for field in fields:
+            if not request.POST.get(field):
+                errors[field] = 'This field is required.'
+
+        if errors:
+            return render(request, 'edit_product.html', context={'categories': categories, 'errors': errors})
 
         # If execution reaches this point, there aren't any errors.
         # Update product name, sku, price and description from the data that
         # come in request.POST dictionary.
         # Consider that ALL data is given as string, so you might format it
         # properly in some cases.
-        product.name = '...'  # <YOUR CODE HERE>
+        product.name = request.POST.get('name')
+        product.sku = request.POST.get('sku')
+        product.price = float(request.POST.get('price'))
+        product.description = request.POST.get('description')
 
         # Get proper category from the DB based on the category name given in
         # payload. Update product category.
-        category = '...'  # <YOUR CODE HERE>
-        product.category = category
+        category = request.POST.get('category')
+        product.category = get_object_or_404(Category, name__exact=category)
         product.save()
 
         # For updating the product images URLs, there are a couple of things that
@@ -107,7 +136,16 @@ def edit_product(request, product_id):
         # 2) Delete all ProductImage objects for URLs that are created but didn't
         #    come in payload
         # 3) Keep all ProductImage objects that are created and also came in payload
-        # <YOUR CODE HERE>
+        product_images = product.productimage_set.all()
+        urls = [request.POST.get(image) for image in ['image-1', 'image-2', 'image-3'] if request.POST.get(image)]
+
+        # Delete unneeded images.
+        product_images.exclude(url__in=urls).delete()
+
+        # Create needed images.
+        # Calling bulk_create() would be better if we know which ones we need to create.
+        for url in urls:
+            ProductImage.objects.get_or_create(product=product, url=url)
 
         # Redirect to 'products' view
         return redirect('products')
@@ -115,21 +153,23 @@ def edit_product(request, product_id):
 
 def delete_product(request, product_id):
     # Get product with given product_id
-    product = '...'  # <YOUR CODE HERE>
+    product = get_object_or_404(Product, id=product_id)
     if request.method == 'GET':
         # render 'delete_product.html' sending product as context
-        return '...'  # <YOUR CODE HERE>
+        return render(request, 'delete_product.html', context={'product': product})
     elif request.method == "POST":
         # Delete product and redirect to 'products' view
-        return '...'  # <YOUR CODE HERE>
+        product.delete()
+        return redirect('products')
 
 
 def toggle_featured(request, product_id):
     # Get product with given product_id
-    product = '...'  # <YOUR CODE HERE>
+    product = get_object_or_404(Product, id=product_id)
 
     # Toggle product featured flag
-    # <YOUR CODE HERE>
+    product.featured = not product.featured
+    product.save()
 
     # Redirect to 'products' view
     return redirect('products')

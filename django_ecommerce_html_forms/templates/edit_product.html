@@ -17,17 +17,21 @@
       <label for="sku"><b>SKU</b></label>
       <!-- Add is-invalid class to SKU input in case of error -->
       <!-- Add product SKU to "value" property to show original value -->
-      <input type="text" class="form-control" id="sku" name="sku">
+      <input type="text" class="form-control {% if errors.sku %}is-invalid{% endif %}" value="{{product.sku}}" name="sku">
       <!-- Show SKU error -->
-      <!-- YOUR CODE HERE -->
+      {% if errors.sku %}
+        <p style="color: #dc3545">{{errors.sku}}</p>
+      {% endif %}
     </div>
     <div class="form-group">
       <label for="price"><b>Price</b></label>
       <!-- Add is-invalid class to Price input in case of error -->
       <!-- Add product Price to "value" property to show original value -->
-      <input type="number" class="form-control" id="price" name="price" step=".1">
+      <input type="number" class="form-control {% if errors.price %}is-invalid{% endif %}" id="price" value="{{product.price}}" name="price" step=".1">
       <!-- Show Price error -->
-      <!-- YOUR CODE HERE -->
+      {% if errors.price %}
+        <p style="color: #dc3545">{{errors.price}}</p>
+      {% endif %}
     </div>
     <div class="form-group">
       <label for="category"><b>Category</b></label>
@@ -42,17 +46,17 @@
     <div class="form-group">
       <label for="description"><b>Description</b></label>
       <!-- Add product description between textarea tags to show original value -->
-      <textarea class="form-control" id="description" rows="3" name='description'></textarea>
+      <textarea class="form-control" id="description" rows="3" name='description''>{{product.description}}</textarea>
     </div>
     <div class="form-group">
       <label for="images"><b>Images</b></label>
-      <input type="url" class="form-control" id="image-1" name="image-1" value="{{images.0}}" placeholder="http://my-product-image/1">
+      <input type="url" class="form-control" id="image-1" name="image-1" value="{{images.0.url}}" placeholder="http://my-product-image/1">
       <br>
       <!-- Add product second image to "value" property to show original value -->
-      <input type="url" class="form-control" id="image-2" name="image-2" placeholder="http://my-product-image/2">
+      <input type="url" class="form-control" id="image-2" name="image-2" value="{{images.1.url}}" placeholder="http://my-product-image/2">
       <br>
       <!-- Add product third image to "value" property to show original value -->
-      <input type="url" class="form-control" id="image-3" name="image-3" placeholder="http://my-product-image/3">
+      <input type="url" class="form-control" id="image-3" name="image-3" value="{{images.2.url}}" placeholder="http://my-product-image/3">
     </div>
 
     <button type="submit" class="btn btn-primary float-right">Edit</button>

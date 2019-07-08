@@ -6,13 +6,13 @@
 
     {% if featured_products %}
       <!-- Loop through all featured products and render the component below replacing each part properly -->
-      <!-- YOUR FOR LOOP HERE -->
+      {% for featured_product in featured_products %}
       <div class="col" style="">
         <div class="card mx-auto" style="height: 100%; width: 12rem;">
           {% if featured_product.productimage_set.all %}
           <div class="product-image-container">
             <!-- Replace the src tag with the FIRST url image of the product-->
-            <img class="card-img-top product-image" src="https://via.placeholder.com/150x150" alt="Card image cap">
+            <img class="card-img-top product-image" src="{{featured_product.productimage_set.first.url}}" alt="Card image cap">
           </div>
           {% else %}
           <div class="product-image-container">
@@ -22,21 +22,20 @@
           {% endif %}
           <div class="card-body text-center">
             <!-- Complete product name -->
-            <h5 class="card-title text-truncate" title="TEST PRODUCT">TEST PRODUCT</h5>
+            <h5 class="card-title text-truncate" title="{{featured_product.name}}">{{featured_product.name}}</h5>
             <!-- Complete product price -->
-            <p class="card-text">$999.99</p>
+            <p class="card-text">${{featured_product.price}}</p>
             <!-- Complete href property with product id at the end -->
-            <a href="/edit-product/99999" class="btn btn-primary">Details</a>
+            <a href="/edit-product/{{featured_product.id}}" class="btn btn-primary">Details</a>
           </div>
         </div>
       </div>
-      <!-- YOUR END FOR LOOP HERE -->
+      {% endfor %}
     {% else %}
       <div class="col">
         <p class="text-center font-italic">No products marked as featured yet.</p>
       </div>
     {% endif %}
-
   </div>
 
   <br>
@@ -56,34 +55,34 @@
     </thead>
     <tbody>
       <!-- Loop through all products and render the component below replacing each part properly -->
-      <!-- YOUR FOR LOOP HERE -->
+      {% for product in products %}
       <tr style="text-align: center;">
         <td>{{ forloop.counter }}</td>
         <!-- Complete product name -->
-        <td>TEST PRODUCT</td>
+        <td>{{product.name}}</td>
         <!-- Complete product category name -->
-        <td>TEST CATEGORY</td>
+        <td>{{product.category}}</td>
         <!-- Complete product price -->
-        <td>$999.99</td>
+        <td>${{product.price}}</td>
         <td>
           {% if product.featured %}
           <!-- Complete href property with product id at the end -->
-          <a href="/toggle-featured/99999"><i style="color: orange;" title='Edit' class="fas fa-star"></i></a>
+          <a href="/toggle-featured/{{product.id}}"><i style="color: orange;" title='Edit' class="fas fa-star"></i></a>
           {% else %}
           <!-- Complete href property with product id at the end -->
-          <a href="/toggle-featured/99999"><i title='Edit' class="far fa-star"></i></a>
+          <a href="/toggle-featured/{{product.id}}"><i title='Edit' class="far fa-star"></i></a>
           {% endif%}
         </td>
         <td>
           <!-- Complete href property with product id at the end -->
-          <a href="/edit-product/99999"><i title='Edit' class="fas fa-edit"></i></a>
+          <a href="/edit-product/{{product.id}}"><i title='Edit' class="fas fa-edit"></i></a>
           <!-- Complete href property with /delete-product/{{product.id}} -->
-          <a href="">
+          <a href="/delete-product/{{product.id}}">
             <i style="color: crimson;" title='Delete' class="fas fa-trash"></i>
           </a>
         </td>
       </tr>
-      <!-- YOUR END FOR LOOP HERE -->
+      {% endfor %}
     </tbody>
   </table>
 {% endblock %}
